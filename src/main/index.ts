@@ -3,6 +3,10 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { PythonBridge, type BridgeEvent } from './pythonBridge';
 import { YtDlpCliBridge } from './ytDlpCliBridge';
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.ytdl.sparks');
+}
+
 const bridge = app.isPackaged && process.platform === 'win32'
   ? new YtDlpCliBridge()
   : new PythonBridge();
@@ -14,6 +18,7 @@ function createWindow() {
     minWidth: 580,
     minHeight: 840,
     backgroundColor: '#181818',
+    icon: app.isPackaged ? undefined : path.join(app.getAppPath(), 'build', 'icons', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,

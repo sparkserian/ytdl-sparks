@@ -1,6 +1,6 @@
 {
   "name": "ytdl-sparks",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Desktop downloader GUI built on top of yt-dlp",
   "author": "William Awuku",
@@ -9,14 +9,15 @@
   "scripts": {
     "dev": "electron-vite dev",
     "setup:python": "python3 -m pip install -r backend/requirements.txt",
+    "build:icons": "node scripts/generate-icons.mjs",
     "build": "electron-vite build",
     "build:backend": "python3 backend/build_backend.py",
     "prepare:mac-resources": "python3 backend/prepare_macos_resources.py",
     "prepare:win-resources": "python3 backend/prepare_external_binaries.py",
     "dist": "npm run dist:mac && npm run dist:win",
     "dist:dir": "npm run build:backend && npm run build && electron-builder --dir",
-    "dist:mac": "npm run prepare:mac-resources && npm run build:backend && npm run build && electron-builder --mac --arm64",
-    "dist:win": "npm run prepare:win-resources && npm run build && electron-builder --win --x64",
+    "dist:mac": "npm run build:icons && npm run prepare:mac-resources && npm run build:backend && npm run build && electron-builder --mac --arm64",
+    "dist:win": "npm run build:icons && npm run prepare:win-resources && npm run build && electron-builder --win --x64",
     "github:repo:init": "node scripts/github-init-repo.mjs",
     "github:release": "node scripts/github-publish-release.mjs"
   },
@@ -32,6 +33,7 @@
     "electron": "^41.0.4",
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
+    "png-to-ico": "^3.0.1",
     "typescript": "^6.0.2",
     "vite": "^7.3.1"
   }

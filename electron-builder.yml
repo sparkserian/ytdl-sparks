@@ -1,10 +1,12 @@
 appId: com.ytdl.sparks
 productName: ytdl-sparks
+icon: build/icons/icon.png
 directories:
   output: release
 files:
   - out/**/*
 mac:
+  icon: build/icons/icon.icns
   category: public.app-category.utilities
   extraResources:
     - from: resources/bin/darwin
@@ -14,7 +16,10 @@ mac:
   target:
     - dmg
     - zip
+dmg:
+  icon: build/icons/icon.icns
 win:
+  icon: build/icons/icon.ico
   extraResources:
     - from: resources/bin/win32-x64
       to: bin/win32-x64
@@ -26,3 +31,6 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  installerIcon: build/icons/icon.ico
+  uninstallerIcon: build/icons/icon.ico
+  installerHeaderIcon: build/icons/icon.ico
