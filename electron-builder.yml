@@ -1,0 +1,28 @@
+appId: com.ytdl.sparks
+productName: ytdl-sparks
+directories:
+  output: release
+files:
+  - out/**/*
+mac:
+  category: public.app-category.utilities
+  extraResources:
+    - from: resources/bin/darwin
+      to: bin/darwin
+      filter:
+        - "**/*"
+  target:
+    - dmg
+    - zip
+win:
+  extraResources:
+    - from: resources/bin/win32-x64
+      to: bin/win32-x64
+      filter:
+        - "**/*"
+  target:
+    - nsis
+    - portable
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

@@ -1,0 +1,11 @@
+.DS_Store
+.env.local
+node_modules/
+out/
+release/
+backend/build/
+backend/dist/
+backend/spec/
+backend/__pycache__/
+resources/bin/darwin/
+resources/bin/win32-x64/
