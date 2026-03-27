@@ -88,16 +88,18 @@ select {
 }
 
 .app-canvas {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   place-items: center;
   padding: 1.1rem;
+  overflow: hidden;
 }
 
 .utility-window {
   position: relative;
   width: min(100%, 580px);
-  min-height: min(90vh, 828px);
+  height: 100%;
+  max-height: calc(100vh - 2.2rem);
   padding: 0.55rem;
   border: 1px solid var(--window-edge);
   background:
@@ -674,7 +676,7 @@ select {
 
   .utility-window {
     width: 100%;
-    min-height: calc(100vh - 1.1rem);
+    max-height: calc(100vh - 1.1rem);
   }
 
   .control-grid {

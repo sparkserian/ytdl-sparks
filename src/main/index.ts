@@ -14,9 +14,10 @@ const bridge = app.isPackaged && process.platform === 'win32'
 function createWindow() {
   const window = new BrowserWindow({
     width: 600,
-    height: 860,
+    height: 920,
     minWidth: 580,
-    minHeight: 840,
+    minHeight: 900,
+    useContentSize: true,
     backgroundColor: '#181818',
     icon: app.isPackaged ? undefined : path.join(app.getAppPath(), 'build', 'icons', 'icon.png'),
     webPreferences: {
