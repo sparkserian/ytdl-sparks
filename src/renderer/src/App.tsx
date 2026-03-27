@@ -330,6 +330,7 @@ function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [advanced, setAdvanced] = useState<AdvancedSettings>(initialAdvancedSettings);
   const [selectedEntryIds, setSelectedEntryIds] = useState<string[]>([]);
+  const [queueExpanded, setQueueExpanded] = useState(true);
   const [progress, setProgress] = useState<{
     status: string;
     downloadedBytes?: number;
@@ -429,6 +430,7 @@ function App() {
       return;
     }
     setSelectedEntryIds(probe.entries.map((entry) => entry.id));
+    setQueueExpanded(true);
   }, [probe]);
 
   useEffect(() => {
@@ -603,12 +605,9 @@ function App() {
     <div className="app-canvas">
       <main className="utility-window">
         <header className="window-strip">
-          <div className="window-title">
-            <strong>ytdl-sparks</strong>
-            <span>compact desktop downloader</span>
-          </div>
+          <strong className="window-title">ytdl-sparks</strong>
           <div className="window-tools">
-            <div className="window-state">{probe ? sourceKind : 'Idle'}</div>
+            {probe && <span className="window-state">{sourceKind}</span>}
             <button
               type="button"
               className={`window-tool-button ${showAdvanced ? 'active' : ''}`}
@@ -619,204 +618,209 @@ function App() {
           </div>
         </header>
 
-        <section className="panel panel-source">
-          <div className="panel-heading">
-            <strong>Source link</strong>
-            <span>Clipboard watch is active while this window stays focused.</span>
-          </div>
-          <div className="source-row">
+        <div className="window-body">
+          {!probe && <div className="idle-spacer" />}
+
+          <div className="source-bar">
             <input
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="Paste or copy a YouTube link"
+              placeholder="Paste a YouTube link"
             />
-            <button type="button" className="action-button secondary" onClick={() => void analyzeUrl(url)} disabled={isProbing}>
-              {isProbing ? 'Checking…' : 'Inspect'}
+            <button
+              type="button"
+              className="source-go"
+              onClick={() => void analyzeUrl(url)}
+              disabled={isProbing}
+            >
+              {isProbing ? '...' : 'Go'}
             </button>
           </div>
-        </section>
 
-        <section className="panel panel-workspace">
-          <div className="selection-row">
-            <div className="selection-art">
-              {heroEntry?.thumbnail ? (
-                <img src={heroEntry.thumbnail} alt={heroEntry.title} />
-              ) : (
-                <div className="selection-art-fallback">{probe ? 'YT' : '•'}</div>
+          {!probe && !isProbing && (
+            <div className="idle-hint">
+              <p>Clipboard watch is active — copy a YouTube link and it loads automatically.</p>
+            </div>
+          )}
+
+          {!probe && <div className="idle-spacer" />}
+
+          {probe && (
+            <div className="meta-row">
+              <div className="meta-art">
+                {heroEntry?.thumbnail ? (
+                  <img src={heroEntry.thumbnail} alt={heroEntry.title} />
+                ) : (
+                  <div className="meta-art-fallback">YT</div>
+                )}
+              </div>
+              <div className="meta-copy">
+                <h1>{probe.title}</h1>
+                <span className="meta-sub">
+                  {probe.uploader ? `${probe.uploader} \u00b7 ` : ''}{formatDuration(selectionDuration)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {probe?.kind === 'playlist' && !isDownloading && (
+            <div className="queue-section">
+              <button
+                type="button"
+                className="queue-toggle"
+                onClick={() => setQueueExpanded((value) => !value)}
+              >
+                <span>{selectedEntryCount} of {probe.entryCount ?? listEntries.length} items selected</span>
+                <span className="queue-chevron">{queueExpanded ? '\u25b4' : '\u25be'}</span>
+              </button>
+              {queueExpanded && (
+                <>
+                  <div className="queue-list">
+                    {listEntries.map((entry, index) => (
+                      <div
+                        key={entry.id || `${entry.title}-${index}`}
+                        className={`queue-row ${selectedEntryIds.includes(entry.id) ? 'selected' : ''}`}
+                        onClick={() => toggleEntry(entry.id)}
+                      >
+                        <input
+                          type="checkbox"
+                          className="queue-check"
+                          checked={selectedEntryIds.includes(entry.id)}
+                          onChange={() => toggleEntry(entry.id)}
+                          onClick={(event) => event.stopPropagation()}
+                        />
+                        <span className="queue-index">{String(index + 1).padStart(2, '0')}</span>
+                        <div className="queue-copy">
+                          <strong>{entry.title}</strong>
+                          <span>{formatDuration(entry.duration)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="queue-actions">
+                    <button type="button" className="mini-text-button" onClick={selectAllEntries}>
+                      Select all
+                    </button>
+                    <button type="button" className="mini-text-button" onClick={clearAllEntries}>
+                      Clear
+                    </button>
+                  </div>
+                </>
               )}
             </div>
-            <div className="selection-copy">
-              <h1>{probe?.title ?? 'No source loaded yet'}</h1>
-              <div className="selection-stats">
-                <span>{sourceKind}</span>
-                <span>{selectedContainer.toUpperCase()}</span>
-                <span>{mode === 'audio' ? (selectedQuality === 'best' ? 'Best audio' : `${selectedQuality} kbps`) : `${selectedQuality} max`}</span>
-                <span>{formatDuration(selectionDuration)}</span>
-              </div>
-              <p>
-                {probe
-                  ? `${selectedEntryCount} selected${probe.uploader ? ` • ${probe.uploader}` : ''}`
-                  : 'Load a playlist or single video to review the queue before downloading.'}
-              </p>
-            </div>
-          </div>
+          )}
 
-          <div className="queue-header">
-            <strong>{probe?.kind === 'playlist' ? 'Playlist items' : 'Current selection'}</strong>
-            <div className="queue-tools">
-              <span>{probe?.kind === 'playlist' ? `${selectedEntryCount} of ${probe.entryCount ?? listEntries.length} selected` : probe ? '1 total' : 'Waiting'}</span>
-              {probe?.kind === 'playlist' ? (
-                <div className="queue-actions">
-                  <button type="button" className="mini-text-button" onClick={selectAllEntries}>
-                    Select all
+          {probe && !isDownloading && (
+            <div className="controls-section">
+              <div className="control-row">
+                <label>Mode</label>
+                <div className="segmented-row">
+                  <button type="button" className={mode === 'audio' ? 'active' : ''} onClick={() => setMode('audio')}>
+                    Audio
                   </button>
-                  <button type="button" className="mini-text-button" onClick={clearAllEntries}>
-                    Clear
+                  <button type="button" className={mode === 'video' ? 'active' : ''} onClick={() => setMode('video')}>
+                    Video
                   </button>
                 </div>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="queue-list">
-            {listEntries.length > 0 ? (
-              listEntries.map((entry, index) => (
-                <article
-                  key={entry.id || `${entry.title}-${index}`}
-                  className={`queue-row ${selectedEntryIds.includes(entry.id) ? 'selected' : ''}`}
-                  onClick={() => (probe?.kind === 'playlist' ? toggleEntry(entry.id) : undefined)}
-                >
-                  {probe?.kind === 'playlist' ? (
-                    <input
-                      type="checkbox"
-                      className="queue-check"
-                      checked={selectedEntryIds.includes(entry.id)}
-                      onChange={() => toggleEntry(entry.id)}
-                      onClick={(event) => event.stopPropagation()}
-                    />
-                  ) : null}
-                  <span className="queue-index">{String(index + 1).padStart(2, '0')}</span>
-                  <div className="queue-copy">
-                    <strong>{entry.title}</strong>
-                    <span>{formatDuration(entry.duration)}</span>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="queue-empty">
-                <strong>Waiting for a YouTube link</strong>
-                <span>The large decorative black block is gone. This area now only shows real queue content.</span>
               </div>
-            )}
-          </div>
-        </section>
 
-        <section className="panel panel-controls">
-          <div className="control-grid">
-            <div className="control-group">
-              <label>Mode</label>
-              <div className="segmented-row">
-                <button type="button" className={mode === 'audio' ? 'active' : ''} onClick={() => setMode('audio')}>
-                  Audio
+              <div className="control-row">
+                <label>Format</label>
+                <div className="segmented-row">
+                  {mode === 'audio' ? (
+                    <>
+                      <button type="button" className={audioFormat === 'aac' ? 'active' : ''} onClick={() => setAudioFormat('aac')}>
+                        AAC
+                      </button>
+                      <button type="button" className={audioFormat === 'mp3' ? 'active' : ''} onClick={() => setAudioFormat('mp3')}>
+                        MP3
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" className={videoFormat === 'mp4' ? 'active' : ''} onClick={() => setVideoFormat('mp4')}>
+                        MP4
+                      </button>
+                      <button type="button" className={videoFormat === 'mkv' ? 'active' : ''} onClick={() => setVideoFormat('mkv')}>
+                        MKV
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="control-row">
+                <label>Quality</label>
+                <div className="segmented-row">
+                  {mode === 'audio' ? (
+                    <>
+                      <button type="button" className={audioQuality === 'best' ? 'active' : ''} onClick={() => setAudioQuality('best')}>
+                        Best
+                      </button>
+                      <button type="button" className={audioQuality === '320' ? 'active' : ''} onClick={() => setAudioQuality('320')}>
+                        320
+                      </button>
+                      <button type="button" className={audioQuality === '192' ? 'active' : ''} onClick={() => setAudioQuality('192')}>
+                        192
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" className={videoQuality === '1080' ? 'active' : ''} onClick={() => setVideoQuality('1080')}>
+                        1080
+                      </button>
+                      <button type="button" className={videoQuality === '720' ? 'active' : ''} onClick={() => setVideoQuality('720')}>
+                        720
+                      </button>
+                      <button type="button" className={videoQuality === 'best' ? 'active' : ''} onClick={() => setVideoQuality('best')}>
+                        Best
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="destination-row">
+                <div className="destination-copy">
+                  <strong>Save to</strong>
+                  <span>{destination || 'No folder selected'}</span>
+                </div>
+                <button type="button" className="mini-text-button" onClick={handlePickDestination}>
+                  Change
                 </button>
-                <button type="button" className={mode === 'video' ? 'active' : ''} onClick={() => setMode('video')}>
-                  Video
-                </button>
               </div>
-            </div>
 
-            <div className="control-group">
-              <label>Format</label>
-              <div className="segmented-row">
-                {mode === 'audio' ? (
-                  <>
-                    <button type="button" className={audioFormat === 'aac' ? 'active' : ''} onClick={() => setAudioFormat('aac')}>
-                      AAC
-                    </button>
-                    <button type="button" className={audioFormat === 'mp3' ? 'active' : ''} onClick={() => setAudioFormat('mp3')}>
-                      MP3
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" className={videoFormat === 'mp4' ? 'active' : ''} onClick={() => setVideoFormat('mp4')}>
-                      MP4
-                    </button>
-                    <button type="button" className={videoFormat === 'mkv' ? 'active' : ''} onClick={() => setVideoFormat('mkv')}>
-                      MKV
-                    </button>
-                  </>
-                )}
-              </div>
+              <button
+                type="button"
+                className="action-button primary"
+                onClick={handleDownload}
+                disabled={isDownloading}
+              >
+                {deviceLabel}
+              </button>
             </div>
+          )}
 
-            <div className="control-group">
-              <label>Quality</label>
-              <div className="segmented-row">
-                {mode === 'audio' ? (
-                  <>
-                    <button type="button" className={audioQuality === 'best' ? 'active' : ''} onClick={() => setAudioQuality('best')}>
-                      Best
-                    </button>
-                    <button type="button" className={audioQuality === '320' ? 'active' : ''} onClick={() => setAudioQuality('320')}>
-                      320
-                    </button>
-                    <button type="button" className={audioQuality === '192' ? 'active' : ''} onClick={() => setAudioQuality('192')}>
-                      192
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button type="button" className={videoQuality === '1080' ? 'active' : ''} onClick={() => setVideoQuality('1080')}>
-                      1080
-                    </button>
-                    <button type="button" className={videoQuality === '720' ? 'active' : ''} onClick={() => setVideoQuality('720')}>
-                      720
-                    </button>
-                    <button type="button" className={videoQuality === 'best' ? 'active' : ''} onClick={() => setVideoQuality('best')}>
-                      Best
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="destination-strip">
-            <div>
-              <strong>Save to</strong>
-              <span>{destination || 'No destination folder selected'}</span>
-            </div>
-            <button type="button" className="action-button secondary" onClick={handlePickDestination}>
-              Change
-            </button>
-          </div>
-
-          {isDownloading ? (
-            <div className="progress-strip">
-              <div className="progress-copy">
-                <strong>{progress?.filename ?? 'Preparing download'}</strong>
-                <span>{formatBytes(progress?.downloadedBytes)} / {formatBytes(progress?.totalBytes)}</span>
+          {isDownloading && (
+            <div className="progress-section">
+              <div className="progress-info">
+                <span className="progress-label">
+                  {percent > 0 ? `${percent.toFixed(1)}%` : 'Preparing\u2026'}
+                </span>
+                <span className="progress-stats">
+                  {formatBytes(progress?.downloadedBytes)} / {formatBytes(progress?.totalBytes)}
+                  {progress?.speed ? ` \u00b7 ${formatBytes(progress.speed)}/s` : ''}
+                </span>
               </div>
               <div className="progress-meter">
                 <div style={{ width: `${percent}%` }} />
               </div>
-              <div className="progress-meta">
-                <span>{percent > 0 ? `${percent.toFixed(1)}%` : 'Waiting'}</span>
-                <button type="button" className="mini-text-button" onClick={handleCancel}>
-                  Cancel
-                </button>
-              </div>
+              <button type="button" className="action-button cancel" onClick={handleCancel}>
+                Cancel
+              </button>
             </div>
-          ) : null}
-
-          <div className="action-row">
-            <div className="action-hint">Need more control? Open advanced options from the top bar.</div>
-            <button type="button" className="action-button primary" onClick={handleDownload} disabled={isDownloading}>
-              {isDownloading ? 'Downloading…' : deviceLabel}
-            </button>
-          </div>
-        </section>
+          )}
+        </div>
 
         <footer className={`status-strip ${error ? 'error' : ''}`}>
           <span className="status-chip">{error ? 'Error' : isDownloading ? 'Working' : 'Status'}</span>
