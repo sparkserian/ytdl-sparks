@@ -619,31 +619,70 @@ function App() {
         </header>
 
         <div className="window-body">
-          {!probe && <div className="idle-spacer" />}
-
-          <div className="source-bar">
-            <input
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              placeholder="Paste a YouTube link"
-            />
-            <button
-              type="button"
-              className="source-go"
-              onClick={() => void analyzeUrl(url)}
-              disabled={isProbing}
-            >
-              {isProbing ? '...' : 'Go'}
-            </button>
-          </div>
-
-          {!probe && !isProbing && (
-            <div className="idle-hint">
-              <p>Clipboard watch is active — copy a YouTube link and it loads automatically.</p>
+          {!probe && (
+            <div className="welcome-section">
+              <div className="welcome-hero">
+                <div className="welcome-icon">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </div>
+                <h2 className="welcome-title">ytdl-sparks</h2>
+                <p className="welcome-sub">Paste a link or copy one to your clipboard</p>
+              </div>
+              <div className="source-bar">
+                <input
+                  value={url}
+                  onChange={(event) => setUrl(event.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+                <button
+                  type="button"
+                  className="source-go"
+                  onClick={() => void analyzeUrl(url)}
+                  disabled={isProbing}
+                >
+                  Go
+                </button>
+              </div>
+              {isProbing && (
+                <div className="probing-indicator">
+                  <div className="probing-spinner" />
+                  <span>Analyzing link{'\u2026'}</span>
+                </div>
+              )}
+              {!isProbing && (
+                <p className="welcome-hint">Clipboard watch is active — copied links load automatically.</p>
+              )}
             </div>
           )}
 
-          {!probe && <div className="idle-spacer" />}
+          {probe && (
+            <div className="source-bar">
+              <input
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
+                placeholder="https://youtube.com/watch?v=..."
+              />
+              <button
+                type="button"
+                className="source-go"
+                onClick={() => void analyzeUrl(url)}
+                disabled={isProbing}
+              >
+                {isProbing ? '\u2026' : 'Go'}
+              </button>
+            </div>
+          )}
+
+          {probe && isProbing && (
+            <div className="probing-indicator">
+              <div className="probing-spinner" />
+              <span>Analyzing link{'\u2026'}</span>
+            </div>
+          )}
 
           {probe && (
             <div className="meta-row">
