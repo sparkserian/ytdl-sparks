@@ -601,6 +601,19 @@ function App() {
     setSelectedEntryIds([]);
   }
 
+  function handleClearSource() {
+    setUrl('');
+    setProbe(null);
+    setError(null);
+    setLogs([]);
+    setProgress(null);
+    setIsDownloading(false);
+    setJobId(null);
+    clipboardSeenRef.current = '';
+    probingUrlRef.current = '';
+    setTipText('Copy a YouTube link while the app is active and it will load automatically.');
+  }
+
   return (
     <div className="app-canvas">
       <main className="utility-window">
@@ -608,6 +621,16 @@ function App() {
           <strong className="window-title">ytdl-sparks</strong>
           <div className="window-tools">
             {probe && <span className="window-state">{sourceKind}</span>}
+            {probe && (
+              <button
+                type="button"
+                className="window-tool-button"
+                onClick={handleClearSource}
+                disabled={isDownloading}
+              >
+                Clear
+              </button>
+            )}
             <button
               type="button"
               className={`window-tool-button ${showAdvanced ? 'active' : ''}`}
