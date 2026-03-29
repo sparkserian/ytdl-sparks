@@ -16,7 +16,6 @@ type RunningJob = {
   process: ChildProcessWithoutNullStreams;
   cancelled: boolean;
   completed: boolean;
-  flushTimer?: ReturnType<typeof setInterval>;
 };
 
 const PROGRESS_PREFIX = '__YTDLP_GUI_PROGRESS__';
@@ -94,12 +93,8 @@ function pushOptionalArg(args: string[], flag: string, value: unknown) {
   args.push(flag, String(normalized));
 }
 
-/**
- * Split a buffer into complete lines and a leftover rest.
- * Handles \r\n, \n, and bare \r (Windows yt-dlp sometimes uses bare \r for progress).
- */
 function toLineChunks(buffer: string) {
-  const lines = buffer.split(/\r\n|\n|\r/);
+  const lines = buffer.split(/\r?\n/);
   return {
     lines: lines.slice(0, -1),
     rest: lines.at(-1) ?? '',
@@ -125,9 +120,6 @@ export class YtDlpCliBridge extends EventEmitter {
   dispose() {
     for (const job of this.jobs.values()) {
       job.cancelled = true;
-      if (job.flushTimer) {
-        clearInterval(job.flushTimer);
-      }
       job.process.kill();
     }
     this.jobs.clear();
@@ -165,8 +157,6 @@ export class YtDlpCliBridge extends EventEmitter {
       '--newline',
       '--no-warnings',
       '--ignore-config',
-      '--no-overwrites',
-      '--windows-filenames',
       '-P',
       destination,
       '-o',
@@ -240,31 +230,10 @@ export class YtDlpCliBridge extends EventEmitter {
 
     args.push(url);
 
-    this.emit('event', {
-      event: 'download-stage',
-      payload: {
-        jobId,
-        stage: 'Starting yt-dlp job',
-      },
-    } satisfies BridgeEvent);
-
-    this.emit('event', {
-      event: 'download-log',
-      payload: {
-        jobId,
-        message: `yt-dlp: ${ytDlp}`,
-      },
-    } satisfies BridgeEvent);
-
     const child = spawn(ytDlp, args, {
       cwd: destination,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: 'pipe',
       windowsHide: true,
-      env: {
-        ...process.env,
-        PYTHONUNBUFFERED: '1',
-        PYTHONDONTWRITEBYTECODE: '1',
-      },
     });
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');
@@ -276,40 +245,24 @@ export class YtDlpCliBridge extends EventEmitter {
       completed: false,
     };
     this.jobs.set(jobId, job);
+    this.emit('event', {
+      event: 'download-stage',
+      payload: {
+        jobId,
+        stage: 'Starting yt-dlp job',
+      },
+    } satisfies BridgeEvent);
 
     let stdoutBuffer = '';
     let stderrBuffer = '';
-
-    const flushBuffers = () => {
-      if (stdoutBuffer.trim()) {
-        const { lines, rest } = toLineChunks(stdoutBuffer);
-        stdoutBuffer = rest;
-        for (const line of lines) {
-          this.handleOutputLine(job, line);
-        }
-        if (rest.trim()) {
-          this.handleOutputLine(job, rest);
-          stdoutBuffer = '';
-        }
-      }
-      if (stderrBuffer.trim()) {
-        const { lines, rest } = toLineChunks(stderrBuffer);
-        stderrBuffer = rest;
-        for (const line of lines) {
-          this.handleOutputLine(job, line);
-        }
-        if (rest.trim()) {
-          this.handleOutputLine(job, rest);
-          stderrBuffer = '';
-        }
-      }
+    const handleChunk = (chunk: string) => {
+      const next = toLineChunks(chunk);
+      return next;
     };
-
-    job.flushTimer = setInterval(flushBuffers, 2000);
 
     child.stdout.on('data', (chunk: string) => {
       stdoutBuffer += chunk;
-      const { lines, rest } = toLineChunks(stdoutBuffer);
+      const { lines, rest } = handleChunk(stdoutBuffer);
       stdoutBuffer = rest;
       for (const line of lines) {
         this.handleOutputLine(job, line);
@@ -318,7 +271,7 @@ export class YtDlpCliBridge extends EventEmitter {
 
     child.stderr.on('data', (chunk: string) => {
       stderrBuffer += chunk;
-      const { lines, rest } = toLineChunks(stderrBuffer);
+      const { lines, rest } = handleChunk(stderrBuffer);
       stderrBuffer = rest;
       for (const line of lines) {
         this.handleOutputLine(job, line);
@@ -326,9 +279,6 @@ export class YtDlpCliBridge extends EventEmitter {
     });
 
     child.on('error', (error) => {
-      if (job.flushTimer) {
-        clearInterval(job.flushTimer);
-      }
       this.emit('event', {
         event: 'download-error',
         payload: {
@@ -340,10 +290,6 @@ export class YtDlpCliBridge extends EventEmitter {
     });
 
     child.on('exit', (code) => {
-      if (job.flushTimer) {
-        clearInterval(job.flushTimer);
-      }
-
       if (stdoutBuffer.trim()) {
         this.handleOutputLine(job, stdoutBuffer.trim());
       }
@@ -387,9 +333,6 @@ export class YtDlpCliBridge extends EventEmitter {
       return { cancelled: false };
     }
     job.cancelled = true;
-    if (job.flushTimer) {
-      clearInterval(job.flushTimer);
-    }
     job.process.kill();
     return { cancelled: true };
   }
@@ -442,12 +385,8 @@ export class YtDlpCliBridge extends EventEmitter {
   private async runCommand(command: string, args: string[]) {
     return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
       const child = spawn(command, args, {
-        stdio: ['ignore', 'pipe', 'pipe'],
+        stdio: 'pipe',
         windowsHide: true,
-        env: {
-          ...process.env,
-          PYTHONUNBUFFERED: '1',
-        },
       });
       let stdout = '';
       let stderr = '';

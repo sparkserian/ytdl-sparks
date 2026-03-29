@@ -10,7 +10,7 @@
 - Watches the clipboard for YouTube links while the app is active
 - Probes playlist links and shows selectable items before download
 - Supports advanced options for subtitles, metadata, SponsorBlock, cookies, archives, and ffmpeg overrides
-- Builds macOS arm64 packages for Apple Silicon and Windows x64 `.exe` packages from the same codebase
+- Builds macOS arm64 packages for Apple Silicon
 
 ## Product Shape
 
@@ -27,6 +27,9 @@ Runtime bridge behavior:
 - macOS packaged app: uses the frozen Python bridge binary
 - Windows packaged app: uses the bundled `yt-dlp.exe` and `ffmpeg.exe` CLI bridge path
 - development mode: uses the Python bridge script directly
+
+macOS is the only supported release target going forward.
+Windows releases have been discontinued after `v2.0.5`.
 
 ## Core Features
 
@@ -83,7 +86,6 @@ The advanced settings overlay exposes a broader `yt-dlp` surface, including:
 ### Packaging
 
 - macOS arm64 build: requires `ffmpeg` and `ffprobe` available locally, or `YTDL_SPARKS_FFMPEG_DIR`
-- Windows build: the repo downloads the required `yt-dlp.exe`, `ffmpeg.exe`, and `ffprobe.exe` automatically into `resources/bin/win32-x64`
 
 ### GitHub release automation
 
@@ -145,24 +147,6 @@ Output:
 - `.zip`
 - blockmap files
 
-### Windows x64
-
-```bash
-npm run dist:win
-```
-
-Output:
-
-- NSIS installer `.exe`
-- portable `.exe`
-- blockmap for the installer
-
-### Both
-
-```bash
-npm run dist
-```
-
 ## Icons and Branding
 
 The app icon source lives in:
@@ -185,8 +169,6 @@ Those assets are used by Electron Builder for:
 
 - the macOS app bundle
 - the DMG
-- the Windows executable
-- the Windows installer and uninstaller
 
 ## GitHub Repo and Release Flow
 
@@ -213,7 +195,6 @@ Release behavior:
 
 Uploaded asset types:
 
-- `.exe`
 - `.dmg`
 - `.deb`
 - `.appimage`
@@ -238,9 +219,10 @@ If you skip the commit/push step, the uploaded binaries may be newer than the so
 
 ## Current Platform Notes
 
+- supported release target: macOS Apple Silicon only
+- Windows releases are archived at `v2.0.5` and earlier
 - mac builds currently use ad-hoc signing unless proper Apple signing/notarization credentials are configured
 - notarization is not handled by `.env.local`
-- Windows signing is not driven by `.env.local`
 - GitHub release publishing only uploads files that already exist in `release/`
 
 ## Repository Files Worth Knowing
