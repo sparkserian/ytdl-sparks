@@ -1,6 +1,6 @@
 {
   "name": "ytdl-sparks",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "private": true,
   "description": "Desktop downloader GUI built on top of yt-dlp",
   "author": "William Awuku",
